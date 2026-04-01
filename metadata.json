@@ -1,5 +1,5 @@
 {
-  "name": "Remix: Eburon Agents Hub",
+  "name": "The Eburon Hub",
   "description": "A real-time multi-agent orchestration platform with voice interaction using Gemini Live API, allowing users to create and manage custom agents.",
   "requestFramePermissions": [
     "microphone"

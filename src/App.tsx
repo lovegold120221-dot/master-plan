@@ -610,7 +610,7 @@ export default function App() {
           <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center">
             <Layout className="w-5 h-5 text-zinc-900" />
           </div>
-          <h1 className="font-bold text-lg tracking-tight">Eburon Agents Hub</h1>
+          <h1 className="font-bold text-lg tracking-tight">The Eburon Hub</h1>
         </div>
 
         <div className="p-4 space-y-4 flex-1 overflow-y-auto">
@@ -861,7 +861,7 @@ export default function App() {
                       <MessageSquare className="w-10 h-10 text-zinc-400" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white mb-2">Welcome to Nexus AI</h2>
+                      <h2 className="text-xl font-bold text-white mb-2">Welcome to The Eburon Hub</h2>
                       <p className="text-sm text-zinc-500">Provide an initial prompt to start a collaborative discussion with 8 specialized AI agents.</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 w-full">
