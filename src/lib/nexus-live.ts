@@ -120,12 +120,13 @@ export class NexusLiveClient {
       const isQuotaError = 
         err.message?.toLowerCase().includes('quota') || 
         err.message?.toLowerCase().includes('rate limit') ||
-        err.message?.toLowerCase().includes('429');
+        err.message?.toLowerCase().includes('429') ||
+        err.message?.toLowerCase().includes('exceeded your current quota');
 
       if (isQuotaError && this.retryCount < this.maxRetries) {
         this.retryCount++;
         // Use a more aggressive backoff for quota errors
-        const delay = Math.pow(2, this.retryCount) * 2000; 
+        const delay = Math.pow(2, this.retryCount) * 3000; 
         console.warn(`Quota exceeded, retrying in ${delay}ms... (Attempt ${this.retryCount}/${this.maxRetries})`);
         await new Promise(r => setTimeout(r, delay));
         return this.connect(agent, callbacks, history);

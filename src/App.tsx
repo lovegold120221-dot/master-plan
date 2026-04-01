@@ -185,6 +185,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<'chat' | 'transcript' | 'showcase'>('chat');
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [meetingError, setMeetingError] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   
   const [isExecutingTodo, setIsExecutingTodo] = useState(false);
   
@@ -252,11 +253,12 @@ export default function App() {
     setInputText('');
     addMessage({ type: 'user', content: text });
 
-    if (meetingState.phase === 'WAIT_FOR_PROMPT') {
+    if (meetingState.phase === 'WAIT_FOR_PROMPT' || meetingError) {
       startMeeting(text);
     } else {
       // Send to active agent if any
-      await liveClientRef.current?.sendText(text);
+      const languagePrompt = `\n\nIMPORTANT: Please speak in ${selectedLanguage}.`;
+      await liveClientRef.current?.sendText(text + languagePrompt);
     }
   };
 
@@ -291,10 +293,14 @@ export default function App() {
   const runMeetingFlow = async (prompt: string) => {
     const expertIds: AgentId[] = ['zeus', 'aquiles', 'orbit', 'echo', 'master', 'atlas', 'forge', 'nova', 'nexus'];
     const anchor = agents['maximus'];
+    const languagePrompt = `\n\nIMPORTANT: Please speak in ${selectedLanguage}.`;
     
     // Helper to connect and speak
     const agentSpeak = async (agent: Agent, textPrompt: string, agentId: AgentId, phaseName?: string) => {
       let audioFinished = false;
+      let fatalError: any = null;
+      
+      const fullAgentPrompt = textPrompt + languagePrompt;
       
       // Update meeting state phase if provided
       if (phaseName) {
@@ -317,17 +323,21 @@ export default function App() {
           },
           onError: (err) => {
             console.error(`Live Client Error for ${agentId}:`, err);
+            fatalError = err;
             audioFinished = true; // Stop waiting if error occurs
           }
         }, history);
 
-        await liveClientRef.current?.sendText(textPrompt);
+        await liveClientRef.current?.sendText(fullAgentPrompt);
         while (!audioFinished) await new Promise(r => setTimeout(r, 500));
+        if (fatalError) throw fatalError;
         completeLastMessage();
         setAgents(prev => ({ ...prev, [agentId]: { ...prev[agentId], status: 'idle' } }));
       } catch (err: any) {
         console.error(`Failed to connect agent ${agentId}:`, err);
-        const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.toLowerCase().includes('429');
+        const isQuota = err.message?.toLowerCase().includes('quota') || 
+                        err.message?.toLowerCase().includes('429') || 
+                        err.message?.toLowerCase().includes('exceeded your current quota');
         addMessage({
           type: 'system',
           content: isQuota 
@@ -350,6 +360,9 @@ export default function App() {
       'WELCOME'
     );
 
+    // Add a small delay between agent turns
+    await new Promise(r => setTimeout(r, 2000));
+
     // Phase 2: Participant Intros (Round Robin)
     setMeetingState(prev => ({ ...prev, phase: 'INTRODUCTIONS' }));
     for (const id of expertIds) {
@@ -359,6 +372,8 @@ export default function App() {
         `Give a very brief (1 sentence) introduction of yourself as ${agents[id].name}, the ${agents[id].role} at EBuron AI.`,
         id
       );
+      // Add a small delay between agent turns
+      await new Promise(r => setTimeout(r, 1500));
     }
 
     // Phase 3: Project Overview (Maximus)
@@ -369,6 +384,9 @@ export default function App() {
       'maximus',
       'FIRST_IMPRESSIONS'
     );
+
+    // Add a small delay between agent turns
+    await new Promise(r => setTimeout(r, 2000));
 
     // Phase 4: Discussion Loop
     const spokenAgents = new Set<AgentId>();
@@ -428,6 +446,9 @@ export default function App() {
       await agentSpeak(pickedAgent, thoughtPrompt, pickedId);
       spokenAgents.add(pickedId);
       
+      // Add a small delay between agent turns to avoid hitting rate limits
+      await new Promise(r => setTimeout(r, 2000));
+
       // Anchor (Maximus) acknowledges and asks for next
       if (spokenAgents.size < expertIds.length) {
         setAgents(prev => ({ ...prev, maximus: { ...prev.maximus, status: 'speaking' } }));
@@ -436,6 +457,8 @@ export default function App() {
           `Thanks ${pickedAgent.name}. Who's next?`,
           'maximus'
         );
+        // Add a small delay between agent turns
+        await new Promise(r => setTimeout(r, 2000));
       }
     }
 
@@ -1250,7 +1273,19 @@ export default function App() {
               <AddAgentForm onAdd={handleAddAgent} />
               <div className="flex items-center justify-between px-2 mb-4">
                 <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Expert Panel</h3>
-                <span className="text-[10px] font-bold text-zinc-600">{Object.keys(agents).length} ACTIVE</span>
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-[9px] font-bold text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-700 transition appearance-none cursor-pointer hover:bg-zinc-800"
+                  >
+                    <option value="English">English</option>
+                    <option value="Dutch Native Flemish">Dutch Native Flemish</option>
+                    <option value="Taglish">Taglish</option>
+                    <option value="Dutch Netherlands">Dutch Netherlands</option>
+                  </select>
+                  <span className="text-[10px] font-bold text-zinc-600">{Object.keys(agents).length} ACTIVE</span>
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 {Object.values(agents).map((agent: Agent) => (
