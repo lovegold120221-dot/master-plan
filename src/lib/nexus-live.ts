@@ -140,30 +140,41 @@ export class NexusLiveClient {
     }
   }
 
+  /**
+   * Determines the voice to use for a specific agent.
+   * Prioritizes the agent's 'voice' property, then falls back to a hardcoded mapping,
+   * and finally defaults to 'Zephyr'.
+   */
   private getVoiceForAgent(agent: Agent): string {
-    if (agent.voice) return agent.voice;
-    // Available: 'Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'
-    const mapping: Record<string, string> = {
-      zeus: 'Zephyr',    // Deep, authoritative
-      aquiles: 'Fenrir', // Strong, direct
-      maximus: 'Charon', // Dry, analytical
-      orbit: 'Kore',     // High-energy, youthful
-      echo: 'Puck',      // Gentle, empathetic
-      master: 'Zephyr',  // Balanced, authoritative
-      atlas: 'Fenrir',   // Steady, reliable
-      forge: 'Puck',     // Energetic, technical
-      nova: 'Kore',      // Passionate, artistic
-      nexus: 'Charon',    // Precise, industrial
-      stratix: 'Zephyr',  // Strategic
-      botmaster: 'Fenrir', // Efficient
-      openmind: 'Charon', // Collaborative
-      bizflow: 'Kore',    // Sharp
-      edgecore: 'Puck',   // Stoic
-      codeking: 'Zephyr', // Perfectionist
-      terminal: 'Fenrir', // Minimalist
-      talent: 'Kore'      // Inspiring
+    // 1. Primary: Use the voice explicitly assigned to the agent
+    if (agent.voice) {
+      return agent.voice;
+    }
+
+    // 2. Secondary: Fallback mapping for legacy or core agents
+    const voiceMapping: Record<string, string> = {
+      zeus: 'Zephyr',
+      aquiles: 'Fenrir',
+      maximus: 'Charon',
+      orbit: 'Kore',
+      echo: 'Puck',
+      master: 'Zephyr',
+      atlas: 'Fenrir',
+      forge: 'Puck',
+      nova: 'Kore',
+      nexus: 'Charon',
+      stratix: 'Zephyr',
+      botmaster: 'Fenrir',
+      openmind: 'Charon',
+      bizflow: 'Kore',
+      edgecore: 'Puck',
+      codeking: 'Zephyr',
+      terminal: 'Fenrir',
+      talent: 'Kore'
     };
-    return mapping[agent.id] || 'Zephyr';
+
+    // 3. Tertiary: Default to 'Zephyr' if no other voice is found
+    return voiceMapping[agent.id.toLowerCase()] || 'Zephyr';
   }
 
   private async handleIncomingAudio(base64: string) {
