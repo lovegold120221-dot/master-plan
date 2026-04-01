@@ -763,66 +763,6 @@ export default function App() {
         <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4">
-              <div className="flex -space-x-2 items-center">
-                {/* User Avatar */}
-                <div 
-                  className={cn(
-                    "w-7 h-7 rounded-full border-2 border-[#09090b] flex items-center justify-center text-[10px] font-bold text-white transition-all z-10 relative",
-                    isUserSpeaking ? "bg-blue-600 ring-2 ring-blue-400 scale-110" : "bg-zinc-800"
-                  )}
-                  title="You (Master E)"
-                >
-                  U
-                  <MiniVisualizer isSpeaking={isUserSpeaking} color="bg-blue-400" />
-                </div>
-                
-                {/* Sorted Agents */}
-                {Object.values(agents)
-                  .sort((a, b) => {
-                    const agentA = a as Agent;
-                    const agentB = b as Agent;
-                    if (agentA.status === 'speaking' && agentB.status !== 'speaking') return -1;
-                    if (agentA.status !== 'speaking' && agentB.status === 'speaking') return 1;
-                    return 0;
-                  })
-                  .map((agent: Agent) => (
-                    <motion.div 
-                      key={agent.id}
-                      animate={{
-                        scale: agent.status === 'speaking' ? 1.15 : 1,
-                        y: agent.isHandRaised ? -4 : 0
-                      }}
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2 border-[#09090b] flex items-center justify-center text-[10px] font-bold text-white transition-all overflow-hidden relative",
-                        AGENT_BG_COLORS[agent.id] || "bg-zinc-700",
-                        agent.status === 'speaking' && "ring-2 ring-white z-10"
-                      )}
-                      title={agent.name}
-                    >
-                      {agent.avatar ? (
-                        <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover" />
-                      ) : (
-                        agent.initial
-                      )}
-                      
-                      {agent.isHandRaised && (
-                        <motion.div 
-                          initial={{ scale: 0, y: 5 }}
-                          animate={{ scale: 1, y: 0 }}
-                          className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 border border-[#09090b] z-20 shadow-sm"
-                        >
-                          <Hand className="w-2 h-2 text-black fill-black" />
-                        </motion.div>
-                      )}
-                      
-                      <MiniVisualizer 
-                        isSpeaking={agent.status === 'speaking'} 
-                        color={AGENT_BG_COLORS[agent.id] || "bg-zinc-500"} 
-                      />
-                    </motion.div>
-                  ))}
-              </div>
-              <div className="h-4 w-px bg-zinc-800" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-zinc-200">Active Meeting</span>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider">{meetingState.phase.replace(/_/g, ' ')}</span>
@@ -1287,129 +1227,119 @@ export default function App() {
                   <span className="text-[10px] font-bold text-zinc-600">{Object.keys(agents).length} ACTIVE</span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                {Object.values(agents).map((agent: Agent) => (
-                  <motion.div 
-                    key={agent.id}
-                    whileHover={{ scale: 1.02 }}
-                    className={cn(
-                      "p-4 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden",
-                      agent.status === 'speaking' 
-                        ? cn("bg-zinc-900 border-2", AGENT_BORDER_COLORS[agent.id] || "border-zinc-500/50 shadow-[0_0_20px_rgba(255,255,255,0.05)]") 
-                        : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
-                    )}
-                  >
-                    {agent.status === 'speaking' && (
-                      <div className={cn("absolute top-0 left-0 w-1 h-full", AGENT_BG_COLORS[agent.id] || "bg-zinc-500")} />
-                    )}
-                    {agent.isHandRaised && (
-                      <div className="absolute top-0 right-0 p-2">
+              <div className="space-y-6">
+                {Object.entries(
+                  Object.values(agents).reduce((acc, agent: Agent) => {
+                    const cat = agent.category || 'Other';
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(agent);
+                    return acc;
+                  }, {} as Record<string, Agent[]>)
+                ).map(([category, categoryAgents]) => (
+                  <div key={category} className="space-y-3">
+                    <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] px-2 mb-2 flex items-center gap-2">
+                      <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                      {category}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {categoryAgents.map((agent: Agent) => (
                         <motion.div 
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                          className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 rounded-full border border-yellow-500/30"
-                        >
-                          <Hand className="w-2.5 h-2.5 text-yellow-500" />
-                          <span className="text-[8px] font-black text-yellow-500 uppercase tracking-tighter">Hand Raised</span>
-                        </motion.div>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <motion.div 
-                          animate={agent.status === 'speaking' ? {
-                            scale: [1, 1.05, 1],
-                            boxShadow: [
-                              "0 0 0px rgba(255,255,255,0)",
-                              "0 0 15px rgba(255,255,255,0.3)",
-                              "0 0 0px rgba(255,255,255,0)"
-                            ]
-                          } : {}}
-                          transition={{ repeat: Infinity, duration: 2 }}
+                          key={agent.id}
+                          whileHover={{ scale: 1.02 }}
+                          onClick={() => {
+                            setAgents(prev => ({
+                              ...prev,
+                              [agent.id]: { ...agent, isSelected: !agent.isSelected }
+                            }));
+                          }}
                           className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold text-white shadow-xl overflow-hidden",
-                            AGENT_BG_COLORS[agent.id] || "bg-zinc-700"
+                            "p-4 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden",
+                            agent.status === 'speaking' 
+                              ? cn("bg-zinc-900 border-2", AGENT_BORDER_COLORS[agent.id] || "border-zinc-500/50 shadow-[0_0_20px_rgba(255,255,255,0.05)]") 
+                              : agent.isSelected
+                                ? "bg-zinc-800/50 border-zinc-700 shadow-lg"
+                                : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
                           )}
                         >
-                          {agent.avatar ? (
-                            <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover" />
-                          ) : (
-                            agent.initial
+                          {agent.status === 'speaking' && (
+                            <div className={cn("absolute top-0 left-0 w-1 h-full", AGENT_BG_COLORS[agent.id] || "bg-zinc-500")} />
                           )}
-                        </motion.div>
-                        <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 border-2 border-[#09090b]">
-                          <Star className="w-2 h-2 text-black fill-black" />
-                        </div>
-                        {agent.status === 'speaking' && (
-                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#09090b] animate-pulse">
-                            <Volume2 className="w-2 h-2 text-white" />
-                          </div>
-                        )}
-                        {agent.isHandRaised && (
-                          <motion.div 
-                            initial={{ scale: 0, y: 10 }}
-                            animate={{ scale: 1, y: 0 }}
-                            className="absolute -top-1 -left-1 bg-yellow-500 rounded-full p-1 border-2 border-[#09090b] shadow-lg z-10"
-                          >
-                            <Hand className="w-2.5 h-2.5 text-black fill-black" />
-                          </motion.div>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h4 className={cn("text-xs font-bold tracking-wide uppercase", agent.color.startsWith('#') ? "" : agent.color)} style={agent.color.startsWith('#') ? { color: agent.color } : {}}>
-                              {agent.name}
-                            </h4>
-                            {agent.status === 'speaking' && (
-                              <div className="flex items-center gap-1.5">
-                                <motion.div 
-                                  animate={{ scale: [1, 1.2, 1] }}
-                                  transition={{ repeat: Infinity, duration: 1.5 }}
-                                  className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" 
-                                />
-                                <span className="text-[8px] font-black text-green-500 uppercase tracking-tighter animate-pulse">Speaking</span>
+                          {agent.isHandRaised && (
+                            <div className="absolute top-0 right-0 p-2">
+                              <motion.div 
+                                animate={{ y: [0, -4, 0] }}
+                                transition={{ repeat: Infinity, duration: 1.5 }}
+                                className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 rounded-full border border-yellow-500/30"
+                              >
+                                <Hand className="w-2.5 h-2.5 text-yellow-500" />
+                                <span className="text-[8px] font-black text-yellow-500 uppercase tracking-tighter">Hand Raised</span>
+                              </motion.div>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <motion.div 
+                                animate={agent.status === 'speaking' ? {
+                                  scale: [1, 1.05, 1],
+                                  boxShadow: [
+                                    "0 0 0px rgba(255,255,255,0)",
+                                    "0 0 15px rgba(255,255,255,0.3)",
+                                    "0 0 0px rgba(255,255,255,0)"
+                                  ]
+                                } : {}}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className={cn(
+                                  "w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold text-white shadow-xl overflow-hidden transition-all",
+                                  AGENT_BG_COLORS[agent.id] || "bg-zinc-700",
+                                  !agent.isSelected && "grayscale opacity-50"
+                                )}
+                              >
+                                {agent.avatar ? (
+                                  <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  agent.initial
+                                )}
+                              </motion.div>
+                              {agent.isFavorite && (
+                                <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 border-2 border-[#09090b]">
+                                  <Star className="w-2 h-2 text-black fill-black" />
+                                </div>
+                              )}
+                              {agent.status === 'speaking' && (
+                                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#09090b] animate-pulse">
+                                  <Volume2 className="w-2 h-2 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <h4 className={cn(
+                                  "text-sm font-bold truncate transition-colors",
+                                  agent.isSelected ? "text-white" : "text-zinc-500"
+                                )}>
+                                  {agent.name}
+                                </h4>
+                                <div className="flex items-center gap-1.5">
+                                  <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    agent.status === 'speaking' ? "bg-green-500 animate-pulse" : "bg-zinc-600"
+                                  )} />
+                                </div>
                               </div>
-                            )}
+                              <p className={cn(
+                                "text-[10px] font-medium truncate uppercase tracking-wider",
+                                agent.isSelected ? "text-zinc-400" : "text-zinc-600"
+                              )}>
+                                {agent.role}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {agent.status === 'speaking' && (
-                              <AudioVisualizer isSpeaking={true} color={AGENT_BG_COLORS[agent.id] || "bg-zinc-500"} />
-                            )}
-                            <div className={cn(
-                              "w-2 h-2 rounded-full",
-                              agent.status === 'speaking' ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-zinc-700"
-                            )} />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 font-medium uppercase mt-0.5">{agent.role}</p>
-                      </div>
+                        </motion.div>
+                      ))}
                     </div>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-bold text-zinc-600 uppercase">Power</span>
-                          <span className="text-xs font-mono font-bold text-white">{agent.powerLevel}</span>
-                        </div>
-                        <div className="h-6 w-px bg-zinc-800" />
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-bold text-zinc-600 uppercase">Status</span>
-                          <span className={cn(
-                            "text-[10px] font-bold uppercase",
-                            agent.status === 'speaking' ? "text-green-500" : "text-zinc-500"
-                          )}>
-                            {agent.status}
-                          </span>
-                        </div>
-                      </div>
-                      <button className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition group-hover:scale-110">
-                        <Volume2 className="w-3.5 h-3.5 text-zinc-400" />
-                      </button>
-                    </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>

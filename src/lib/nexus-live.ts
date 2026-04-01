@@ -76,35 +76,37 @@ export class NexusLiveClient {
           },
           onmessage: async (message: LiveServerMessage) => {
             const serverContent = message.serverContent as any;
+            if (!serverContent) return;
             
-            // Handle tool calls
-            if (serverContent?.modelTurn?.parts?.[0]?.functionCall) {
-              const { name, args } = serverContent.modelTurn.parts[0].functionCall;
-              callbacks.onToolCall?.(name, args);
+            // Handle tool calls, audio, and transcription from model
+            if (serverContent.modelTurn?.parts) {
+              for (const part of serverContent.modelTurn.parts) {
+                if (part.functionCall) {
+                  callbacks.onToolCall?.(part.functionCall.name, part.functionCall.args);
+                }
+                if (part.inlineData?.data) {
+                  this.handleIncomingAudio(part.inlineData.data);
+                }
+                if (part.text) {
+                  callbacks.onTranscription?.(part.text, false);
+                }
+              }
             }
 
-            // Handle audio output
-            const base64Audio = serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (base64Audio) {
-              this.handleIncomingAudio(base64Audio);
-            }
-
-            // Handle transcription
-            const text = serverContent?.modelTurn?.parts?.[0]?.text;
-            if (text) {
-              callbacks.onTranscription?.(text, false);
-            }
-
-            const userText = serverContent?.userTurn?.parts?.[0]?.text;
-            if (userText) {
-              callbacks.onTranscription?.(userText, true);
+            // Handle transcription from user
+            if (serverContent.userTurn?.parts) {
+              for (const part of serverContent.userTurn.parts) {
+                if (part.text) {
+                  callbacks.onTranscription?.(part.text, true);
+                }
+              }
             }
             
-            if (serverContent?.turnComplete) {
+            if (serverContent.turnComplete) {
               callbacks.onAudioEnd?.();
             }
 
-            if (serverContent?.interrupted) {
+            if (serverContent.interrupted) {
               this.stopAudio();
             }
           },
@@ -141,18 +143,25 @@ export class NexusLiveClient {
   private getVoiceForAgent(agent: Agent): string {
     if (agent.voice) return agent.voice;
     // Available: 'Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'
-    // Restricting to 2 Female voices: Zephyr and Kore
     const mapping: Record<string, string> = {
       zeus: 'Zephyr',    // Deep, authoritative
-      aquiles: 'Zephyr', // Strong, direct
+      aquiles: 'Fenrir', // Strong, direct
       maximus: 'Charon', // Dry, analytical
       orbit: 'Kore',     // High-energy, youthful
-      echo: 'Kore',      // Gentle, empathetic
+      echo: 'Puck',      // Gentle, empathetic
       master: 'Zephyr',  // Balanced, authoritative
-      atlas: 'Zephyr',   // Steady, reliable
-      forge: 'Kore',     // Energetic, technical
+      atlas: 'Fenrir',   // Steady, reliable
+      forge: 'Puck',     // Energetic, technical
       nova: 'Kore',      // Passionate, artistic
-      nexus: 'Zephyr'    // Precise, industrial
+      nexus: 'Charon',    // Precise, industrial
+      stratix: 'Zephyr',  // Strategic
+      botmaster: 'Fenrir', // Efficient
+      openmind: 'Charon', // Collaborative
+      bizflow: 'Kore',    // Sharp
+      edgecore: 'Puck',   // Stoic
+      codeking: 'Zephyr', // Perfectionist
+      terminal: 'Fenrir', // Minimalist
+      talent: 'Kore'      // Inspiring
     };
     return mapping[agent.id] || 'Zephyr';
   }

@@ -10,11 +10,24 @@ interface AddAgentFormProps {
 
 const VOICES = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'];
 const TONES = ['Professional', 'Friendly', 'Analytical', 'Enthusiastic', 'Sarcastic', 'Empathetic', 'Authoritative'];
+const CATEGORIES = [
+  'Core Team',
+  'Business Planner',
+  'Automation Specialist',
+  'Opensource AI',
+  'Business Automator',
+  'Local LLM',
+  'Coding Masters',
+  'CLI Agents',
+  'Skills Masters',
+  'Custom Agents'
+];
 
 export const AddAgentForm: React.FC<AddAgentFormProps> = ({ onAdd }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
+  const [category, setCategory] = useState(CATEGORIES[9]); // Default to Custom Agents
   const [description, setDescription] = useState('');
   const [voice, setVoice] = useState(VOICES[0]);
   const [tone, setTone] = useState(TONES[0]);
@@ -63,6 +76,7 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ onAdd }) => {
       id: name.toLowerCase().replace(/\s+/g, '-'),
       name,
       role,
+      category,
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       expertise: role,
       voicePrompt: `${description}. Your tone should be ${tone}.`,
@@ -89,6 +103,7 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ onAdd }) => {
   const resetForm = () => {
     setName('');
     setRole('');
+    setCategory(CATEGORIES[9]);
     setDescription('');
     setVoice(VOICES[0]);
     setTone(TONES[0]);
@@ -177,6 +192,20 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ onAdd }) => {
                         required
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Category</label>
+                  <div className="relative">
+                    <Settings2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                    <select 
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-700 appearance-none"
+                    >
+                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </div>
                 </div>
 

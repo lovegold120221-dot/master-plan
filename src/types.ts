@@ -6,6 +6,7 @@ export interface Agent {
   id: AgentId;
   name: string;
   role: string;
+  category: string;
   color: string;
   expertise: string;
   voicePrompt: string;
