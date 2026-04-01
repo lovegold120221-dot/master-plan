@@ -291,8 +291,23 @@ export default function App() {
   };
 
   const runMeetingFlow = async (prompt: string) => {
-    const expertIds: AgentId[] = ['zeus', 'aquiles', 'orbit', 'echo', 'master', 'atlas', 'forge', 'nova', 'nexus'];
-    const anchor = agents['maximus'];
+    const selectedAgents = (Object.values(agents) as Agent[]).filter(a => a.isSelected);
+    
+    if (selectedAgents.length === 0) {
+      addMessage({ 
+        type: 'system', 
+        content: '⚠️ No agents selected. Please select at least one agent from the Expert Panel to participate in the meeting.' 
+      });
+      setMeetingState(prev => ({ ...prev, isMeetingRunning: false, phase: 'WAIT_FOR_PROMPT' }));
+      return;
+    }
+
+    // Pick an anchor: Maximus if selected, otherwise the first selected agent
+    const anchor = selectedAgents.find(a => a.id === 'maximus') || selectedAgents[0];
+    
+    // Experts are all selected agents except the anchor
+    const expertIds = selectedAgents.filter(a => a.id !== anchor.id).map(a => a.id);
+    
     const languagePrompt = `\n\nIMPORTANT: Please speak in ${selectedLanguage}.`;
     
     // Helper to connect and speak
@@ -1107,6 +1122,18 @@ export default function App() {
               />
               <div className="flex items-center justify-between px-2 pb-1">
                 <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setActiveTab('agents')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-widest",
+                      activeTab === 'agents' 
+                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" 
+                        : "bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800 hover:text-zinc-300"
+                    )}
+                  >
+                    <Users className="w-3 h-3" />
+                    Select Agents ({(Object.values(agents) as Agent[]).filter(a => a.isSelected).length})
+                  </button>
                   <label className="cursor-pointer p-2 hover:bg-zinc-800 rounded-lg transition text-zinc-500 hover:text-zinc-300">
                     <input 
                       type="file" 
@@ -1212,8 +1239,40 @@ export default function App() {
             <div className="space-y-3">
               <AddAgentForm onAdd={handleAddAgent} />
               <div className="flex items-center justify-between px-2 mb-4">
-                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Expert Panel</h3>
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                  Expert Panel
+                  <span className="px-1.5 py-0.5 bg-zinc-800 rounded-md text-[9px] text-zinc-500 font-black">
+                    {(Object.values(agents) as Agent[]).filter(a => a.isSelected).length} SELECTED
+                  </span>
+                </h3>
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 mr-2">
+                    <button 
+                      onClick={() => {
+                        setAgents(prev => {
+                          const next = { ...prev };
+                          Object.keys(next).forEach(id => { next[id] = { ...next[id], isSelected: true }; });
+                          return next;
+                        });
+                      }}
+                      className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-tighter"
+                    >
+                      All
+                    </button>
+                    <span className="text-[9px] text-zinc-700">/</span>
+                    <button 
+                      onClick={() => {
+                        setAgents(prev => {
+                          const next = { ...prev };
+                          Object.keys(next).forEach(id => { next[id] = { ...next[id], isSelected: false }; });
+                          return next;
+                        });
+                      }}
+                      className="text-[9px] font-bold text-zinc-500 hover:text-zinc-400 uppercase tracking-tighter"
+                    >
+                      None
+                    </button>
+                  </div>
                   <select 
                     value={selectedLanguage}
                     onChange={(e) => setSelectedLanguage(e.target.value)}
@@ -1301,6 +1360,15 @@ export default function App() {
                                   agent.initial
                                 )}
                               </motion.div>
+                              {agent.isSelected && (
+                                <motion.div 
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5 border-2 border-[#09090b] z-10"
+                                >
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                                </motion.div>
+                              )}
                               {agent.isFavorite && (
                                 <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 border-2 border-[#09090b]">
                                   <Star className="w-2 h-2 text-black fill-black" />
@@ -1497,9 +1565,19 @@ export default function App() {
               setInputText('');
               startMeeting(prompt);
             }}
-            className="w-full py-3 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all disabled:opacity-50 shadow-xl"
+            className="w-full py-3 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all disabled:opacity-50 shadow-xl flex items-center justify-center gap-2"
           >
-            {meetingState.isMeetingRunning ? "Meeting in Progress" : "Start Meeting Flow"}
+            {meetingState.isMeetingRunning ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Meeting in Progress
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                Start Meeting with {(Object.values(agents) as Agent[]).filter(a => a.isSelected).length} Experts
+              </>
+            )}
           </button>
         </div>
       </aside>
